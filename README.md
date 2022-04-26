@@ -1,6 +1,12 @@
 This is a C++ WebSocket Server that I'm using to develop monty-mvp. It was adapted from Adam Rehn's demo. Please see here for the original base project: https://github.com/adamrehn/websocket-server-demo
 
 
+![image](https://user-images.githubusercontent.com/63464503/165118815-67073ec8-e063-4804-88fe-2c9494db6b03.png)
+
+
+
+
+
 
 
 These are the build instructions from the original repo, along with the License references:
