@@ -97,26 +97,6 @@ int main(int argc, char* argv[])
 							server.sendMessage(conn, "Done.", message1);
 							sleep_for(500ms);
 
-							/////////////////////////////////////////////////////////
-							/*THE PLAN*/
-							
-							
-							/*CREATE A FOLDE UNIQUE TO THIS THREAD*/
-    						// std::string uuid = uuids::to_string (uuids::uuid_system_generator{}());
-							// std::string mkdir_command = std::format("mkdir {}", uuid);
-
-							// system(mkdir_command);
-
-
-							/*START DOCKER CONTAINER THAT CAN ACCESS THAT FOLDER*/
-							// system(rundocker_command)
-
-
-							/* CHECK FOLDER FOR RESULTS */
-							// while (1) check_results
-
-							/* send them over the ws connection */
-
 						}
 					);
 
