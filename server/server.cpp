@@ -12,7 +12,7 @@
 #define PORT_NUMBER 8080
 #define NUMBER_OF_MONTY_INSTANCES 5
 
-#define CLIENT "xJHkjahUAHSKJANBifg
+#define CLIENT "xJHkjahUAHSKJANBifg"
 #define MONTY_STATUS "ASJjndafoIHFSjdkfouH"
 #define MONTY_END "SJDSHFnkfsjsnKFKDJkjsifnjJjj"
 
