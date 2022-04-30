@@ -10,6 +10,12 @@
 
 //The port number the WebSocket server listens on
 #define PORT_NUMBER 8080
+#define NUMBER_OF_MONTY_INSTANCES 5
+
+#define CLIENT "xJHkjahUAHSKJANBifg
+#define MONTY_STATUS "ASJjndafoIHFSjdkfouH"
+#define MONTY_END "SJDSHFnkfsjsnKFKDJkjsifnjJjj"
+
 
 #include <chrono>
 #include <thread>
@@ -120,6 +126,88 @@ int main(int argc, char* argv[])
 			); // mainEventLoop.post
 		} // lambda
 	); // server.message
+
+
+
+
+	server.message(
+		CLIENT, 
+		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
+		{
+			mainEventLoop.post(
+				[conn, args, &server]()
+				{
+
+					bool started = false;
+
+					for (int i; i<NUMBER_OF_MONTY_INSTANCES; ++i){
+						/* send /GET request */
+						std::clog << "GET /100x" << std::endl;
+
+						if (started){
+							/*if available, it has already started: store conn info and return*/
+							Json::Value message1;
+							server.sendMessage(
+								conn, 
+								"An instance is now running your simulation.", 
+								message1
+							);
+
+
+							return;
+
+						}
+					}
+
+					Json::Value message1;
+					server.sendMessage(
+						conn,
+						"All instances are busy.",
+						message1
+					);
+
+				} // lambda
+			); // mainEventLoop.post
+		} // lambda
+	); // server.message
+
+
+
+	server.message(
+		MONTY_STATUS,
+		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
+		{
+			mainEventLoop.post(
+				[conn, args, &server]()
+				{
+
+
+
+				} // lambda
+			); // mainEventLoop.post
+		} // lambda
+	); // server.message
+
+
+	server.message(
+		MONTY_END,
+		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
+		{
+			mainEventLoop.post(
+				[conn, args, &server]()
+				{
+
+
+
+				} // lambda
+			); // mainEventLoop.post
+		} // lambda
+	); // server.message
+
+
+
+
+
 	
 	// Start the networking thread
 	std::thread serverThread(
