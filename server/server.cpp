@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
 
 	server.message(
-		CLIENT, 
+		CLIENT, // CLIENT is asking for a simulation - I should probably separate this even more CLIENT_START_SPHERE, CLIENT_START_ONION
 		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
 		{
 			mainEventLoop.post(
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
 
 
 	server.message(
-		MONTY_STATUS,
+		MONTY_STATUS, // monty is comunicating status of simulation, redirect the message to CLIENT
 		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
 		{
 			mainEventLoop.post(
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
 
 	server.message(
-		MONTY_END,
+		MONTY_END, // simulation has ended, handle success or failure
 		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
 		{
 			mainEventLoop.post(
