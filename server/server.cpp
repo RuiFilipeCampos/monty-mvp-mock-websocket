@@ -1,10 +1,12 @@
 #include "WebsocketServer.h"
 
+
 #include <iostream>
 #include <thread>
 #include <asio/io_service.hpp>
 #include <unordered_map>
 #include <stdint.h>
+
 
 //The port number the WebSocket server listens on
 #define PORT_NUMBER 8080
@@ -12,68 +14,18 @@
 #include <chrono>
 #include <thread>
 
-using namespace std::this_thread;     // sleep_for, sleep_until
+using namespace std::this_thread;
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
 
-
-class Monty{
-	ClientConnection conn;
-
-	bool has_been_used;
-
-	public:
-		Monty(){}
-		Monty(ClientConnection conn){
-			this->conn = conn;
-			this->has_been_used = false;
-		}
-
-
-		void process(WebsocketServer &server){
-
-
-			Json::Value message1;
-
-			server.sendMessage(this->conn, "Initializing instance... ", message1);
-    		sleep_for(1s);
-
-
-			server.sendMessage(this->conn, "Preparing materials...", message1);
-    		sleep_for(5s);
-
-
-
-			server.sendMessage(this->conn, "Generating geometry...", message1);
-    		sleep_for(1s);
-
-
-			server.sendMessage(this->conn, "Putting it all toguether...", message1);
-    		sleep_for(1s);
-
-
-			server.sendMessage(this->conn, "Running simulation, this may take a while depending on your parameters...", message1);
-			sleep_for(60s);
-
-
-			server.sendMessage(this->conn, "Done.", message1);
-    		sleep_for(500ms);
-
-			this->has_been_used = true;
-
-		} /*std::string getMessage()*/
-	/*public*/
-};
-
-
 int main(int argc, char* argv[])
 {
-	//Create the event loop for the main thread, and the WebSocket server
+	// create the event loop for the main thread, and the WebSocket server
 	asio::io_service mainEventLoop;
 	WebsocketServer server;
 	
-	//Register our network callbacks, ensuring the logic is run on the main thread's event loop
+	// register our network callbacks, ensuring the logic is run on the main thread's event loop
 	server.connect(
 		[&mainEventLoop, &server](ClientConnection conn)
 		{
@@ -83,7 +35,7 @@ int main(int argc, char* argv[])
 					std::clog << "Connection opened." << std::endl;
 					std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
 					
-					//Send a hello message to the client
+					// send a hello message to the client
 					server.sendMessage(conn, "hello", Json::Value());
 				}
 			);
@@ -104,92 +56,87 @@ int main(int argc, char* argv[])
 		}
 	);
 
+
+
+
+
 	server.message(
-		"message", 
+		"monty", 
 		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
 		{
 			mainEventLoop.post(
 				[conn, args, &server]()
 				{
-					std::clog << "message handler on the main thread" << std::endl;
-					std::clog << "Message payload:" << std::endl;
+					std::thread worker(
+						[conn, &server](){
 
-					for (auto key : args.getMemberNames()) {
-						std::clog << "\t" 
-								  << key 
-								  << ": " 
-								  << args[key].asString() 
-								  << std::endl;
-					}
-					
-					//Echo the message pack to the client
-					server.sendMessage(conn, "message", args);
-				}
-			);
-		}
-	);
+							/* MOCK STUFF */
+							Json::Value message1;
 
+							server.sendMessage(conn, "Initializing instance... ", message1);
+							sleep_for(1s);
 
-	ClientConnection conn;
-	Monty monty_instance;
+							server.sendMessage(conn, "Preparing materials...", message1);
+							sleep_for(5s);
 
+							server.sendMessage(conn, "Generating geometry...", message1);
+							sleep_for(1s);
 
+							server.sendMessage(conn, "Putting it all toguether...", message1);
+							sleep_for(1s);
 
+							server.sendMessage(conn, "Running simulation, this may take a while depending on your parameters...", message1);
+							sleep_for(60s);
 
+							server.sendMessage(conn, "Done.", message1);
+							sleep_for(500ms);
 
-	std::unordered_map<intptr_t, Monty> monty_instances;
-	ClientConnection _conn;
+							/////////////////////////////////////////////////////////
+							/*THE PLAN*/
+							
+							
+							/*CREATE A FOLDE UNIQUE TO THIS THREAD*/
+    						// std::string uuid = uuids::to_string (uuids::uuid_system_generator{}());
+							// std::string mkdir_command = std::format("mkdir {}", uuid);
 
-	monty_instances
-		[(intptr_t) (&_conn)]
-				= Monty();
-
-
-	server.message(
-		"monty", 
-		[&mainEventLoop, &server, &monty_instances](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server, &monty_instances]()
-				{
-					std::clog << "Handling Monty message..." << std::endl;
-					std::clog << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << &conn << std::endl;
-
-					if ( monty_instances.count((intptr_t) (&conn)) == 0 ){
-						std::clog << ">>>  Creating new instance..." << std::endl;
-						monty_instances[(intptr_t) (&conn)] = Monty(conn);
-					}
+							// system(mkdir_command);
 
 
-					Monty *monty = &monty_instances[(intptr_t) (&conn)];
-
-					monty->process(server);
-
+							/*START DOCKER CONTAINER THAT CAN ACCESS THAT FOLDER*/
+							// system(rundocker_command)
 
 
+							/* CHECK FOLDER FOR RESULTS */
+							// while (1) check_results
 
-				}
-			);
-		}
-	);
+							/* send them over the ws connection */
+
+						}
+					);
+
+					worker.detach();
+
+				} // lambda
+			); // mainEventLoop.post
+		} // lambda
+	); // server.message
 	
-	//Start the networking thread
+	// Start the networking thread
 	std::thread serverThread(
 		[&server]() {
 			server.run(PORT_NUMBER);
-		}
-	);
-	
+		} // lambda
+	); // serverThread
 
-	
-	//Start the event loop for the main thread
 
-	std::cout << "Starting server... \n"; 
+	// Start the event loop for the main thread
+
+	std::cout << "Starting ws... \n"; 
 	asio::io_service::work work(mainEventLoop);
 
-	std::cout << "Running server... \n"; 
+	std::cout << "Running ws... \n"; 
 	mainEventLoop.run();
 	
-	std::cout << "Server stopped... \n"; 
+	std::cout << "ws stopped... \n"; 
 	return 0;
 }
