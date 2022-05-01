@@ -17,6 +17,57 @@
 #define MONTY_END "SJDSHFnkfsjsnKFKDJkjsifnjJjj"
 
 
+
+
+
+
+
+
+#define HANDLE_MESSAGE(FROM, CODE)                                                      \
+	server.message(                                                                     \
+		FROM,                                                                           \
+		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)       \
+		{                                                                               \
+			mainEventLoop.post(                                                         \
+				[conn, args, &server]()                                                 \
+				{                                                                       \
+					CODE                                                                \
+				}                                                                       \
+			);                                                                          \
+		}                                                                               \
+	);                                                                                  \
+
+
+#define ON_CONNECT(CODE) \
+	server.connect(\
+		[&mainEventLoop, &server](ClientConnection conn)\
+		{ \
+			mainEventLoop.post( \
+				[conn, &server]() \
+				{ \
+					CODE \
+				}\
+			);\
+		}\
+	);\
+
+
+#define ON_DISCONNECT(CODE) \
+	server.disconnect( \
+		[&mainEventLoop, &server](ClientConnection conn) \
+		{ \
+			mainEventLoop.post( \
+				[conn, &server]() \
+				{ \
+					CODE \
+				} \
+			); \
+		} \
+	); \
+
+
+
+
 #include <chrono>
 #include <thread>
 
@@ -30,159 +81,79 @@ int main(int argc, char* argv[])
 	// create the event loop for the main thread, and the WebSocket server
 	asio::io_service mainEventLoop;
 	WebsocketServer server;
+
+	ON_CONNECT(
+		std::clog << "Connection opened." << std::endl;
+		std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
+		
+		// send a hello message to the client
+		server.sendMessage(conn, "hello", Json::Value());
+	)
 	
-	// register our network callbacks, ensuring the logic is run on the main thread's event loop
-	server.connect(
-		[&mainEventLoop, &server](ClientConnection conn)
-		{
-			mainEventLoop.post(
-				[conn, &server]()
-				{
-					std::clog << "Connection opened." << std::endl;
-					std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
-					
-					// send a hello message to the client
-					server.sendMessage(conn, "hello", Json::Value());
-				}
-			);
+	ON_DISCONNECT(
+		std::clog << "Connection closed." << std::endl;
+		std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
+	)
+
+
+	// mock stuff
+	HANDLE_MESSAGE("monty",
+		Json::Value message1;
+
+		server.sendMessage(conn, "Initializing instance... ", message1);
+		sleep_for(1s);
+
+		server.sendMessage(conn, "Preparing materials...", message1);
+		sleep_for(5s);
+
+		server.sendMessage(conn, "Generating geometry...", message1);
+		sleep_for(1s);
+
+		server.sendMessage(conn, "Putting it all toguether...", message1);
+		sleep_for(1s);
+
+		server.sendMessage(conn, "Running simulation, this may take a while depending on your parameters...", message1);
+		sleep_for(60s);
+
+		server.sendMessage(conn, "Done.", message1);
+		sleep_for(500ms);
+	)
+
+	// from client
+	HANDLE_MESSAGE(CLIENT,
+		bool started = false;
+
+		for (int i; i<NUMBER_OF_MONTY_INSTANCES; ++i){
+			/* send /GET request */
+			std::clog << "GET /100x" << std::endl;
+
+			if (started){
+				/*if available, it has already started: store conn info and return*/
+				Json::Value message1;
+				server.sendMessage(
+					conn, 
+					"An instance is now running your simulation.", 
+					message1
+				);
+
+
+				return;
+
+			}
 		}
-	);
 
+		Json::Value message1;
+		server.sendMessage(
+			conn,
+			"All instances are busy.",
+			message1
+		);
+	)
 
-	server.disconnect(
-		[&mainEventLoop, &server](ClientConnection conn)
-		{
-			mainEventLoop.post(
-				[conn, &server]()
-				{
-					std::clog << "Connection closed." << std::endl;
-					std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
-				}
-			);
-		}
-	);
+	// from monty container instance
+	HANDLE_MESSAGE(MONTY_STATUS, )
+	HANDLE_MESSAGE(MONTY_END, )
 
-
-
-
-
-	server.message(
-		"monty", 
-		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server]()
-				{
-					std::thread worker(
-						[conn, &server](){
-
-							/* MOCK STUFF */
-							Json::Value message1;
-
-							server.sendMessage(conn, "Initializing instance... ", message1);
-							sleep_for(1s);
-
-							server.sendMessage(conn, "Preparing materials...", message1);
-							sleep_for(5s);
-
-							server.sendMessage(conn, "Generating geometry...", message1);
-							sleep_for(1s);
-
-							server.sendMessage(conn, "Putting it all toguether...", message1);
-							sleep_for(1s);
-
-							server.sendMessage(conn, "Running simulation, this may take a while depending on your parameters...", message1);
-							sleep_for(60s);
-
-							server.sendMessage(conn, "Done.", message1);
-							sleep_for(500ms);
-
-						}
-					);
-
-					worker.detach();
-
-				} // lambda
-			); // mainEventLoop.post
-		} // lambda
-	); // server.message
-
-
-
-
-	server.message(
-		CLIENT, // CLIENT is asking for a simulation - I should probably separate this even more CLIENT_START_SPHERE, CLIENT_START_ONION
-		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server]()
-				{
-
-					bool started = false;
-
-					for (int i; i<NUMBER_OF_MONTY_INSTANCES; ++i){
-						/* send /GET request */
-						std::clog << "GET /100x" << std::endl;
-
-						if (started){
-							/*if available, it has already started: store conn info and return*/
-							Json::Value message1;
-							server.sendMessage(
-								conn, 
-								"An instance is now running your simulation.", 
-								message1
-							);
-
-
-							return;
-
-						}
-					}
-
-					Json::Value message1;
-					server.sendMessage(
-						conn,
-						"All instances are busy.",
-						message1
-					);
-
-				} // lambda
-			); // mainEventLoop.post
-		} // lambda
-	); // server.message
-
-
-
-	server.message(
-		MONTY_STATUS, // monty is comunicating status of simulation, redirect the message to CLIENT
-		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server]()
-				{
-
-
-
-				} // lambda
-			); // mainEventLoop.post
-		} // lambda
-	); // server.message
-
-
-	server.message(
-		MONTY_END, // simulation has ended, handle success or failure
-		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server]()
-				{
-
-
-
-				} // lambda
-			); // mainEventLoop.post
-		} // lambda
-	); // server.message
 
 
 
