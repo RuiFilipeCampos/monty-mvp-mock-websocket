@@ -1,218 +1,252 @@
 #include "WebsocketServer.h"
 
+#define SFML_STATIC 
 #include <iostream>
 #include <thread>
 #include <asio/io_service.hpp>
 #include <unordered_map>
 #include <stdint.h>
 
+#include "external/SFML/Network.hpp"
+#include <sstream>
+
+
+
+
+
 //The port number the WebSocket server listens on
 #define PORT_NUMBER 8080
+#define NUMBER_OF_MONTY_INSTANCES 5
+
+#define CLIENT "xJHkjahUAHSKJANBifg"
+#define MONTY_STATUS "ASJjndafoIHFSjdkfouH"
+#define MONTY_END "SJDSHFnkfsjsnKFKDJkjsifnjJjj"
+
+
+
+
+
+
+#define HANDLE_MESSAGE(FROM, CODE)                                                      \
+	server.message(                                                                     \
+		FROM,                                                                           \
+		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)       \
+		{                                                                               \
+			mainEventLoop.post(                                                         \
+				[conn, args, &server]()                                                 \
+				{                                                                       \
+					CODE                                                                \
+				}                                                                       \
+			);                                                                          \
+		}                                                                               \
+	);                                                                                  \
+
+
+#define ON_CONNECT(CODE) \
+	server.connect(\
+		[&mainEventLoop, &server](ClientConnection conn)\
+		{ \
+			mainEventLoop.post( \
+				[conn, &server]() \
+				{ \
+					CODE \
+				}\
+			);\
+		}\
+	);\
+
+
+#define ON_DISCONNECT(CODE) \
+	server.disconnect( \
+		[&mainEventLoop, &server](ClientConnection conn) \
+		{ \
+			mainEventLoop.post( \
+				[conn, &server]() \
+				{ \
+					CODE \
+				} \
+			); \
+		} \
+	); \
+
+
+
 
 #include <chrono>
 #include <thread>
 
-using namespace std::this_thread;     // sleep_for, sleep_until
+using namespace std::this_thread;
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
 
 
-class Monty{
-	ClientConnection conn;
-
-	bool has_been_used;
-
-	public:
-		Monty(){}
-		Monty(ClientConnection conn){
-			this->conn = conn;
-			this->has_been_used = false;
-		}
-
-
-		void process(WebsocketServer &server){
-
-
-			Json::Value message1;
-
-			server.sendMessage(this->conn, "Initializing instance... ", message1);
-    		sleep_for(1s);
-
-
-			server.sendMessage(this->conn, "Preparing materials...", message1);
-    		sleep_for(5s);
-
-
-
-			server.sendMessage(this->conn, "Generating geometry...", message1);
-    		sleep_for(1s);
-
-
-			server.sendMessage(this->conn, "Putting it all toguether...", message1);
-    		sleep_for(1s);
-
-
-			server.sendMessage(this->conn, "Running simulation, this may take a while depending on your parameters...", message1);
-			sleep_for(60s);
-
-
-			server.sendMessage(this->conn, "Done.", message1);
-    		sleep_for(500ms);
-
-			this->has_been_used = true;
-
-		} /*std::string getMessage()*/
-	/*public*/
-};
-
 
 int main(int argc, char* argv[])
 {
-	//Create the event loop for the main thread, and the WebSocket server
+	std::string url = "http://127.0.0.1:1000";
+	
+	
+	sf::Http::Request request;
+
+
+	return 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	// create the event loop for the main thread, and the WebSocket server
 	asio::io_service mainEventLoop;
 	WebsocketServer server;
+
+	ON_CONNECT(
+		std::clog << "Connection opened." << std::endl;
+		std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
+
+		if (server.numConnections() < 5) {
+			server.sendMessage(conn, "success", Json::Value());
+			return;
+		};
+		
+	)
 	
-	//Register our network callbacks, ensuring the logic is run on the main thread's event loop
-	server.connect(
-		[&mainEventLoop, &server](ClientConnection conn)
-		{
-			mainEventLoop.post(
-				[conn, &server]()
-				{
-					std::clog << "Connection opened." << std::endl;
-					std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
-					
-					//Send a hello message to the client
-					server.sendMessage(conn, "hello", Json::Value());
-				}
-			);
-		}
-	);
+	ON_DISCONNECT(
+		std::clog << "Connection closed." << std::endl;
+		std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
+	)
 
 
-	server.disconnect(
-		[&mainEventLoop, &server](ClientConnection conn)
-		{
-			mainEventLoop.post(
-				[conn, &server]()
-				{
-					std::clog << "Connection closed." << std::endl;
-					std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
-				}
-			);
-		}
-	);
+	// mock stuff 
+	HANDLE_MESSAGE("monty",
+		Json::Value message1;
 
-	server.message(
-		"message", 
-		[&mainEventLoop, &server](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server]()
-				{
-					std::clog << "message handler on the main thread" << std::endl;
-					std::clog << "Message payload:" << std::endl;
-
-					for (auto key : args.getMemberNames()) {
-						std::clog << "\t" 
-								  << key 
-								  << ": " 
-								  << args[key].asString() 
-								  << std::endl;
-					}
-					
-					//Echo the message pack to the client
-					server.sendMessage(conn, "message", args);
-				}
-			);
-		}
-	);
-
-
-	ClientConnection conn;
-	Monty monty_instance;
-
-
-
-
-
-	std::unordered_map<intptr_t, Monty> monty_instances;
-	ClientConnection _conn;
-
-	monty_instances
-		[(intptr_t) (&_conn)]
-				= Monty();
-
-
-	server.message(
-		"monty", 
-		[&mainEventLoop, &server, &monty_instances](ClientConnection conn, const Json::Value& args)
-		{
-			mainEventLoop.post(
-				[conn, args, &server, &monty_instances]()
-				{
-					std::clog << "Handling Monty message..." << std::endl;
-					std::clog << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << &conn << std::endl;
-
-					if ( monty_instances.count((intptr_t) (&conn)) == 0 ){
-						std::clog << ">>>  Creating new instance..." << std::endl;
-						monty_instances[(intptr_t) (&conn)] = Monty(conn);
-					}
-
-
-					Monty *monty = &monty_instances[(intptr_t) (&conn)];
-
-					monty->process(server);
-
-
-
-
-				}
-			);
-		}
-	);
+		server.sendMessage(
+			conn, 
+			"Initializing instance... ",
+			message1
+		);
 	
-	//Start the networking thread
+		sleep_for(1s);
+
+
+
+		server.sendMessage(
+			conn,
+			"Preparing materials...",
+			message1
+		);
+
+		sleep_for(5s);
+
+
+
+		server.sendMessage(
+			conn,
+			"Generating geometry...",
+			message1
+		);
+	
+		sleep_for(1s);
+
+
+
+		server.sendMessage(
+			conn,
+			"Putting it all toguether...",
+			message1
+		);
+
+		sleep_for(1s);
+
+
+
+		server.sendMessage(
+			conn,
+			"Running simulation, this may take a while depending on your parameters...",
+			message1
+		);
+
+		sleep_for(60s);
+
+
+
+		server.sendMessage(
+			conn,
+			"Done.",
+			message1
+		);
+
+		sleep_for(500ms);
+	)
+
+	// from client
+	HANDLE_MESSAGE(CLIENT,
+		bool started = false;
+
+		for (int i; i<NUMBER_OF_MONTY_INSTANCES; ++i){
+			/* send /GET request */
+			std::clog << "GET /100x" << std::endl;
+
+			if (started){
+				/*if available, it has already started: store conn info and return*/
+				Json::Value message1;
+				server.sendMessage(
+					conn, 
+					"An instance is now running your simulation.", 
+					message1
+				);
+
+
+				return;
+
+			}
+		}
+
+		Json::Value message1;
+		server.sendMessage(
+			conn,
+			"All instances are busy.",
+			message1
+		);
+	)
+
+	// from monty container instance
+	HANDLE_MESSAGE(MONTY_STATUS, )
+	HANDLE_MESSAGE(MONTY_END, )
+
+
+
+
+
+
+	
+	// Start the networking thread
 	std::thread serverThread(
 		[&server]() {
 			server.run(PORT_NUMBER);
-		}
-	);
-	
-	//Start a keyboard input thread that reads from stdin
-	std::thread inputThread(
-		[&server, &mainEventLoop]()
-		{
-			string input;
-			while (1)
-			{
-				//Read user input from stdin
-				std::getline(std::cin, input);
-				
-				//Broadcast the input to all connected clients (is sent on the network thread)
-				Json::Value payload;
-				payload["input"] = input;
-				server.broadcastMessage("userInput", payload);
-				
-				//Debug output on the main thread
-				mainEventLoop.post(
-					[]() {
-						std::clog << "User input debug output on the main thread" << std::endl;
-					}
-				);
-			}
-		}
-	);
-	
-	//Start the event loop for the main thread
+		} // lambda
+	); // serverThread
 
-	std::cout << "Starting server... \n"; 
+
+	// Start the event loop for the main thread
+
+	std::cout << "Starting ws... \n"; 
 	asio::io_service::work work(mainEventLoop);
 
-	std::cout << "Running server... \n"; 
+	std::cout << "Running ws... \n"; 
 	mainEventLoop.run();
 	
-	std::cout << "Server stopped... \n"; 
+	std::cout << "ws stopped... \n"; 
 	return 0;
 }

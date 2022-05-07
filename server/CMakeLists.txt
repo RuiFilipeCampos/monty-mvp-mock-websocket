@@ -1,10 +1,15 @@
 cmake_minimum_required (VERSION 3.5)
 project(WebsocketServer)
 
-# Set the C++ standard to C++11
-set(CMAKE_CXX_STANDARD 11)
+
+
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Enable all compiler warnings
 if (MSVC)
@@ -32,6 +37,8 @@ include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/external")
 
 # Compile jsoncpp from source
 add_library(jsoncpp STATIC ${PROJECT_SOURCE_DIR}/external/jsoncpp.cpp)
+
+
 
 # Build the server executable
 add_executable(server server.cpp WebsocketServer.cpp)
