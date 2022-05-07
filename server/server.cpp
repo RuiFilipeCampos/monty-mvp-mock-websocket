@@ -1,11 +1,17 @@
 #include "WebsocketServer.h"
 
-
+#define SFML_STATIC 
 #include <iostream>
 #include <thread>
 #include <asio/io_service.hpp>
 #include <unordered_map>
 #include <stdint.h>
+
+#include "external/SFML/Network.hpp"
+#include <sstream>
+
+
+
 
 
 //The port number the WebSocket server listens on
@@ -15,8 +21,6 @@
 #define CLIENT "xJHkjahUAHSKJANBifg"
 #define MONTY_STATUS "ASJjndafoIHFSjdkfouH"
 #define MONTY_END "SJDSHFnkfsjsnKFKDJkjsifnjJjj"
-
-
 
 
 
@@ -76,8 +80,32 @@ using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
 
+
+
 int main(int argc, char* argv[])
 {
+	std::string url = "http://127.0.0.1:1000";
+	
+	
+	sf::Http::Request request;
+
+
+	return 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
 	// create the event loop for the main thread, and the WebSocket server
 	asio::io_service mainEventLoop;
 	WebsocketServer server;
@@ -85,9 +113,12 @@ int main(int argc, char* argv[])
 	ON_CONNECT(
 		std::clog << "Connection opened." << std::endl;
 		std::clog << "There are now " << server.numConnections() << " open connections." << std::endl;
+
+		if (server.numConnections() < 5) {
+			server.sendMessage(conn, "success", Json::Value());
+			return;
+		};
 		
-		// send a hello message to the client
-		server.sendMessage(conn, "hello", Json::Value());
 	)
 	
 	ON_DISCONNECT(
@@ -96,26 +127,66 @@ int main(int argc, char* argv[])
 	)
 
 
-	// mock stuff
+	// mock stuff 
 	HANDLE_MESSAGE("monty",
 		Json::Value message1;
 
-		server.sendMessage(conn, "Initializing instance... ", message1);
+		server.sendMessage(
+			conn, 
+			"Initializing instance... ",
+			message1
+		);
+	
 		sleep_for(1s);
 
-		server.sendMessage(conn, "Preparing materials...", message1);
+
+
+		server.sendMessage(
+			conn,
+			"Preparing materials...",
+			message1
+		);
+
 		sleep_for(5s);
 
-		server.sendMessage(conn, "Generating geometry...", message1);
+
+
+		server.sendMessage(
+			conn,
+			"Generating geometry...",
+			message1
+		);
+	
 		sleep_for(1s);
 
-		server.sendMessage(conn, "Putting it all toguether...", message1);
+
+
+		server.sendMessage(
+			conn,
+			"Putting it all toguether...",
+			message1
+		);
+
 		sleep_for(1s);
 
-		server.sendMessage(conn, "Running simulation, this may take a while depending on your parameters...", message1);
+
+
+		server.sendMessage(
+			conn,
+			"Running simulation, this may take a while depending on your parameters...",
+			message1
+		);
+
 		sleep_for(60s);
 
-		server.sendMessage(conn, "Done.", message1);
+
+
+		server.sendMessage(
+			conn,
+			"Done.",
+			message1
+		);
+
 		sleep_for(500ms);
 	)
 

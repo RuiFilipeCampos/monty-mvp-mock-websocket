@@ -38,6 +38,8 @@ include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/external")
 # Compile jsoncpp from source
 add_library(jsoncpp STATIC ${PROJECT_SOURCE_DIR}/external/jsoncpp.cpp)
 
+
+
 # Build the server executable
 add_executable(server server.cpp WebsocketServer.cpp)
 target_link_libraries (server jsoncpp)
